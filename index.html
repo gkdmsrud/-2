@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초등 5학년 조선 시대 사회 퀴즈</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 아이콘 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Gothic A1) -->
+    <link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Gothic A1', sans-serif;
+            background-color: #f0fdf4;
+        }
+        /* Shake Animation for Wrong Answer */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+        /* Bounce Animation for Sound/Success */
+        @keyframes pop {
+            0% { transform: scale(0.9); opacity: 0; }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-emerald-50 text-slate-800 min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-emerald-200">
+
+    <!-- 상단 헤더 & 진행 상황 -->
+    <header class="w-full bg-emerald-700 text-white p-4 shadow-md flex justify-between items-center z-10">
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl">📜</span>
+            <h1 class="text-lg md:text-xl font-bold tracking-wide">초등 5학년 사회 퀴즈 <span class="text-emerald-200 text-sm font-normal">| 조선 시대</span></h1>
+        </div>
+        <div id="progress-container" class="flex items-center space-x-2">
+            <span id="quiz-progress-text" class="text-sm md:text-base font-semibold bg-emerald-800 px-3 py-1 rounded-full border border-emerald-600">1 / 10</span>
+        </div>
+    </header>
+
+    <!-- 메인 컨테이너 (중앙: 정답 입력 / 하단: 문제 배치) -->
+    <main class="flex-1 flex flex-col justify-between max-w-4xl w-full mx-auto p-4 md:p-6 relative">
+
+        <!-- [중앙 영역] 정답 입력 및 피드백 -->
+        <section id="quiz-screen" class="flex-1 flex flex-col justify-center items-center my-6 z-10 w-full">
+            
+            <!-- 점수판 및 힌트 영역 -->
+            <div id="hint-box" class="mb-4 text-center">
+                <span id="category-badge" class="inline-block bg-emerald-100 text-emerald-800 text-xs md:text-sm font-bold px-3 py-1 rounded-full border border-emerald-300 shadow-sm mb-2">
+                    조선 건국
+                </span>
+                <p id="hint-text" class="text-xs md:text-sm text-slate-500 italic h-5">힌트: 2글자의 이름입니다.</p>
+            </div>
+
+            <!-- 정답 입력 폼 (화면 중앙) -->
+            <form id="answer-form" onsubmit="handleAnswerSubmit(event)" class="w-full max-w-md flex flex-col items-center">
+                <div id="input-wrapper" class="w-full relative transition-all duration-200">
+                    <input type="text" 
+                           id="answer-input" 
+                           placeholder="정답을 입력하세요" 
+                           autocomplete="off"
+                           class="w-full text-center text-xl md:text-2xl font-bold py-4 px-6 rounded-2xl border-4 border-emerald-400 bg-white text-slate-800 shadow-lg focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-200 transition-all placeholder:text-slate-300 placeholder:font-normal">
+                    <button type="submit" 
+                            id="submit-btn"
+                            class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-lg py-3 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                        <span>정답 제출하기</span>
+                        <i class="fa-solid fa-paper-plane text-sm"></i>
+                    </button>
+                </div>
+            </form>
+
+            <!-- 오답 / 정답 피드백 메시지 창 -->
+            <div id="feedback-message" class="h-10 mt-3 text-center font-bold text-lg flex items-center justify-center"></div>
+        </section>
+
+        <!-- [하단 영역] 문제 배치 -->
+        <section class="bg-white rounded-2xl p-5 md:p-7 shadow-xl border-2 border-emerald-200 mb-16 relative">
+            <div class="flex items-start space-x-3">
+                <span class="bg-emerald-600 text-white rounded-lg w-8 h-8 md:w-10 md:h-10 flex items-center justify-center font-extrabold text-base md:text-lg shrink-0 shadow-sm">
+                    Q
+                </span>
+                <div class="flex-1">
+                    <h2 id="question-text" class="text-lg md:text-xl font-bold text-slate-800 leading-relaxed md:leading-normal">
+                        문제를 불러오는 중입니다...
+                    </h2>
+                </div>
+            </div>
+        </section>
+
+        <!-- [우측 하단 영역] 패스 / 다음 문제 버튼 (아이콘 + 글자) -->
+        <div class="fixed bottom-6 right-6 z-20">
+            <button id="next-btn" 
+                    onclick="goToNextQuestion()" 
+                    title="다음 문제로 이동 (패스)"
+                    class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center justify-center gap-2 border-2 border-white transition-all transform hover:scale-105 group focus:outline-none focus:ring-4 focus:ring-emerald-300">
+                <span class="font-extrabold text-base md:text-lg tracking-wider">패스</span>
+                <i class="fa-solid fa-arrow-right text-lg md:text-xl transition-transform group-hover:translate-x-1"></i>
+            </button>
+        </div>
+
+    </main>
+
+    <!-- 결과 화면 모달 (퀴즈 종료 후 표시) -->
+    <div id="result-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full text-center shadow-2xl border-4 border-emerald-300 animate-pop">
+            <div class="text-5xl md:text-6xl mb-4">🏆</div>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-emerald-900 mb-2">퀴즈 완료!</h2>
+            <p class="text-slate-600 mb-6">조선 시대 역사 탐구를 멋지게 마쳤습니다.</p>
+            
+            <div class="bg-emerald-50 rounded-2xl p-4 mb-6 border border-emerald-200">
+                <div class="text-sm text-slate-500 mb-1">최종 점수</div>
+                <div class="text-4xl font-extrabold text-emerald-600"><span id="score-text">0</span> / 10</div>
+            </div>
+
+            <button onclick="restartQuiz()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all text-lg flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>다시 풀기</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 초등 5학년 수준 조선 시대 사회 퀴즈 데이터
+        const quizData = [
+            {
+                id: 1,
+                category: "조선의 건국",
+                question: "고려를 무너뜨리고 1392년에 조선을 건국한 인물은 누구일까요?",
+                answers: ["이성계", "태조 이성계", "태조이성계"],
+                hint: "조선의 제1대 왕(태조)입니다."
+            },
+            {
+                id: 2,
+                category: "조선의 수도",
+                question: "조선의 수도인 '한양'은 오늘날의 어느 도시일까요?",
+                answers: ["서울", "서울특별시", "서울시"],
+                hint: "현재 대한민국에서 가장 인구가 많은 수도입니다."
+            },
+            {
+                id: 3,
+                category: "세종대왕의 업적",
+                question: "세종대왕이 백성들이 글을 몰라 겪는 어려움을 불쌍히 여겨 만든 우리 글의 이름은 무엇일까요?",
+                answers: ["훈민정음", "한글"],
+                hint: "'백성을 가르치는 바른 소리'라는 뜻입니다."
+            },
+            {
+                id: 4,
+                category: "조선의 과학 기술",
+                question: "세종대왕 때 장영실 등이 제작한 것으로, 해의 그림자를 이용하여 시간을 측정하던 시계는 무엇일까요?",
+                answers: ["앙부일구", "해시계"],
+                hint: "솥 모양을 한 해시계입니다."
+            },
+            {
+                id: 5,
+                category: "조선의 법전",
+                question: "조선 시대 최고의 법전으로, 성종 때 완성되어 조선의 정치, 사회, 경제의 기준이 된 책은 무엇일까요?",
+                answers: ["경국대전"],
+                hint: "나라를 다스리는 큰 법전이라는 뜻입니다."
+            },
+            {
+                id: 6,
+                category: "임진왜란",
+                question: "1592년 일본(왜)이 조선을 침략하여 일어난 전쟁은 무엇일까요?",
+                answers: ["임진왜란"],
+                hint: "임진년에 일어난 왜구의 난리라는 뜻입니다."
+            },
+            {
+                id: 7,
+                category: "임진왜란과 이순신",
+                question: "임진왜란 때 이순신 장군이 학이 날개를 펼친 모양의 진법(학익진)을 펼쳐 큰 승리를 거둔 해전은 무엇일까요?",
+                answers: ["한산도 대첩", "한산도대첩", "한산대첩"],
+                hint: "한산도 앞바다에서 벌어진 전투입니다."
+            },
+            {
+                id: 8,
+                category: "조선의 신분제",
+                question: "조선 시대 신분 제도 중 나라의 중요한 일을 결정하고 벼슬길에 오를 수 있었던 가장 높은 특권층 신분은 무엇일까요?",
+                answers: ["양반"],
+                hint: "문반과 무반을 합쳐서 부르던 말입니다."
+            },
+            {
+                id: 9,
+                category: "병자호란",
+                question: "1636년 청나라가 조선을 침략했을 때 인조 왕이 남한산성으로 피신하여 항전했던 전쟁은 무엇일까요?",
+                answers: ["병자호란"],
+                hint: "병자년에 오랑캐(청)가 일으킨 난리라는 뜻입니다."
+            },
+            {
+                id: 10,
+                category: "조선의 의학 및 문화",
+                question: "조선 시대 의학자 허준이 중국과 조선의 의학 지식을 종합하여 지은 유네스코 세계기록유산 의료 서적은 무엇일까요?",
+                answers: ["동의보감"],
+                hint: "동쪽 나라(조선) 의학의 보배로운 거울이라는 뜻입니다."
+            }
+        ];
+
+        let currentQuizIndex = 0;
+        let score = 0;
+        let isAnsweredCorrectly = false;
+
+        // Web Audio API를 활용한 효과음 생성기 (외부 파일 없이 작동)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 정답 효과음 (맑은 '띵동' 소리)
+        function playCorrectSound() {
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                
+                // 첫번째 톤 (E5)
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(659.25, now);
+                gain1.gain.setValueAtTime(0.15, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+                osc1.start(now);
+                osc1.stop(now + 0.3);
+
+                // 두번째 톤 (A5)
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(880, now + 0.12);
+                gain2.gain.setValueAtTime(0.2, now + 0.12);
+                gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.start(now + 0.12);
+                osc2.stop(now + 0.6);
+            } catch (e) {
+                console.log("Audio play failed", e);
+            }
+        }
+
+        // 오답 효과음 ('뼝' 낮은 소리)
+        function playWrongSound() {
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } catch (e) {
+                console.log("Audio play failed", e);
+            }
+        }
+
+        // 초기화 및 문제 로드
+        document.addEventListener("DOMContentLoaded", () => {
+            loadQuestion();
+        });
+
+        // 문제 출력 함수
+        function loadQuestion() {
+            const currentQuiz = quizData[currentQuizIndex];
+            
+            // UI 업데이트
+            document.getElementById("quiz-progress-text").innerText = `${currentQuizIndex + 1} / ${quizData.length}`;
+            document.getElementById("category-badge").innerText = currentQuiz.category;
+            document.getElementById("hint-text").innerText = `힌트: ${currentQuiz.hint}`;
+            document.getElementById("question-text").innerText = currentQuiz.question;
+            
+            // 입력창 초기화
+            const inputEl = document.getElementById("answer-input");
+            inputEl.value = "";
+            inputEl.disabled = false;
+            inputEl.classList.remove("border-green-500", "bg-green-50", "border-red-400", "bg-red-50");
+            inputEl.classList.add("border-emerald-400", "bg-white");
+            
+            // 피드백 메시지 초기화
+            const feedbackEl = document.getElementById("feedback-message");
+            feedbackEl.innerText = "";
+            feedbackEl.className = "h-10 mt-3 text-center font-bold text-lg flex items-center justify-center";
+
+            // 상태 초기화
+            isAnsweredCorrectly = false;
+
+            // 자동 포커스
+            setTimeout(() => {
+                inputEl.focus();
+            }, 100);
+        }
+
+        // 정답 제출 처리
+        function handleAnswerSubmit(e) {
+            e.preventDefault();
+            
+            // 이미 정답을 맞춘 상태면 진행하지 않음
+            if (isAnsweredCorrectly) return;
+
+            const inputEl = document.getElementById("answer-input");
+            const feedbackEl = document.getElementById("feedback-message");
+            const wrapperEl = document.getElementById("input-wrapper");
+            const userAnswer = inputEl.value.trim().replace(/\s+/g, ''); // 공백 제거 처리
+
+            if (!userAnswer) {
+                feedbackEl.innerText = "정답을 입력해 주세요!";
+                feedbackEl.className = "h-10 mt-3 text-center font-bold text-base text-emerald-600 flex items-center justify-center";
+                inputEl.focus();
+                return;
+            }
+
+            const currentQuiz = quizData[currentQuizIndex];
+            const isCorrect = currentQuiz.answers.some(ans => ans.replace(/\s+/g, '') === userAnswer);
+
+            if (isCorrect) {
+                // --- 정답 처리 ---
+                isAnsweredCorrectly = true;
+                score++;
+                playCorrectSound();
+
+                // 입력창 정답 스타일링
+                inputEl.disabled = true;
+                inputEl.classList.remove("border-emerald-400", "bg-white");
+                inputEl.classList.add("border-emerald-500", "bg-emerald-50", "text-emerald-800");
+
+                feedbackEl.innerText = "⭕ 정답입니다! 아주 잘했어요!";
+                feedbackEl.className = "h-10 mt-3 text-center font-bold text-xl text-emerald-600 animate-pop flex items-center justify-center";
+
+                // 정답 후 약간의 대기(1.2초) 후 다음 문제로 자동 이동
+                setTimeout(() => {
+                    goToNextQuestion();
+                }, 1200);
+
+            } else {
+                // --- 오답 처리 ---
+                playWrongSound();
+
+                // 애니메이션 효과
+                wrapperEl.classList.add("animate-shake");
+                setTimeout(() => {
+                    wrapperEl.classList.remove("animate-shake");
+                }, 400);
+
+                feedbackEl.innerText = "❌ 다시 한번 생각해보세요!";
+                feedbackEl.className = "h-10 mt-3 text-center font-bold text-lg text-red-500 flex items-center justify-center";
+
+                // 오답시 즉시 다시 입력 가능하도록 입력창 재활성화 및 포커스
+                inputEl.value = "";
+                inputEl.focus();
+            }
+        }
+
+        // 다음 문제로 이동
+        function goToNextQuestion() {
+            if (currentQuizIndex < quizData.length - 1) {
+                currentQuizIndex++;
+                loadQuestion();
+            } else {
+                showFinalResult();
+            }
+        }
+
+        // 최종 결과 모달 출력
+        function showFinalResult() {
+            document.getElementById("score-text").innerText = score;
+            const modal = document.getElementById("result-modal");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        // 퀴즈 다시 시작
+        function restartQuiz() {
+            currentQuizIndex = 0;
+            score = 0;
+            const modal = document.getElementById("result-modal");
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+            loadQuestion();
+        }
+    </script>
+</body>
+</html>
